@@ -5,7 +5,7 @@ import { UsersModule } from './users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Users } from './users/entities/user.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AuthModule } from './auth/auth.module';
+import { UserDetail } from './users/entities/user-profile.entity';
 
 @Module({
   imports: [
@@ -25,7 +25,7 @@ import { AuthModule } from './auth/auth.module';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        entities: [Users],
+        entities: [Users, UserDetail],
         synchronize: true,
       }),
     }),
@@ -33,7 +33,7 @@ import { AuthModule } from './auth/auth.module';
     // Users module burada ekli (kullanıcı işlemleri)
     UsersModule,
 
-    AuthModule,
+    
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -2,8 +2,8 @@ import { Controller, Post, Body, Get } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
-
-@Controller('users')
+import { UserProfileDto } from './dto/user-profile.dto';
+@Controller('')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -19,6 +19,12 @@ export class UsersController {
     return await this.usersService.login(loginUserDto);
   }
   
+    // profile info
+    @Post('profile')
+    async profile(@Body() UserProfileDto: UserProfileDto) {
+      return await this.usersService.createProfile(UserProfileDto);
+    }
+    
   @Get()
   findAll() {
     return this.usersService.findAll();

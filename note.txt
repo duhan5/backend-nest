@@ -1,0 +1,1 @@
+user profile 1 değeri sabit o güncellenecek jwt tokendan sorna

@@ -1,5 +1,4 @@
 export class LoginUserDto {
-    username: string;
-    password: string;
-  }
-  
+  identifier: string; // username veya email olabilir
+  password: string;
+}

@@ -3,8 +3,10 @@ import { Repository } from 'typeorm';
 import { Users } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
-import * as bcrypt from 'bcrypt';
+import { UserDetail } from './entities/user-profile.entity';
+import { UserProfileDto } from './dto/user-profile.dto';
 import { Injectable, NotFoundException, UnauthorizedException, ConflictException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 
 
 @Injectable()
@@ -12,7 +14,10 @@ export class UsersService {
   constructor(
     @InjectRepository(Users)
     private userRepository: Repository<Users>,
-  ) {}
+
+    @InjectRepository(UserDetail)
+    private userProfileRepository: Repository<UserDetail>, // EKLEDİK
+) {}
 
   // Kullanıcı oluşturma
   async create(createUserDto: CreateUserDto) {
@@ -57,25 +62,30 @@ export class UsersService {
 
     // Kullanıcı giriş
     async login(loginUserDto: LoginUserDto) {
-      const { username, password } = loginUserDto;
-  
-      // 1️⃣ Kullanıcıyı bul
-      const user = await this.userRepository.findOneBy({ username });
+      const { identifier, password } = loginUserDto;
+    
+      // Kullanıcıyı username veya email ile bulmaya çalış
+      const user = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.username = :identifier', { identifier })
+      .orWhere('user.email = :identifier', { identifier })
+      .getOne();
+    
       if (!user) {
         throw new NotFoundException('Kullanıcı bulunamadı');
       }
-  
-      // 2️⃣ Şifre kontrolü
+    
+      // Şifre kontrolü
       const isValid = await bcrypt.compare(password, user.password);
       if (!isValid) {
         throw new UnauthorizedException('Şifre yanlış');
       }
-  
-      // 3️⃣ Opsiyonel: last_login güncellemesi
-      // user.last_login = new Date();
-      // await this.userRepository.save(user);
-  
-      // 4️⃣ Cevap
+    
+      // last_login güncelle
+      user.last_login = new Date();
+      await this.userRepository.save(user);
+    
+      // Cevap
       return {
         message: 'Giriş başarılı',
         user: {
@@ -85,6 +95,39 @@ export class UsersService {
         },
       };
     }
+
+    async createProfile(userProfileDto: UserProfileDto) {
+      const userId = 1; // ÖRNEK (ileride req.user.id olacak)
+  
+      // Daha önce profil var mı?
+      const existingProfile = await this.userProfileRepository.findOneBy({ user_id: userId });
+  
+      if (existingProfile) {
+          // Güncelle
+          this.userProfileRepository.merge(existingProfile, userProfileDto);
+          const updatedProfile = await this.userProfileRepository.save(existingProfile);
+  
+          return {
+              message: 'Profil güncellendi',
+              profile: updatedProfile,
+          };
+      }
+  
+      // Yoksa yeni oluştur
+      const userProfile = this.userProfileRepository.create({
+          user_id: userId,
+          ...userProfileDto,
+      });
+  
+      await this.userProfileRepository.save(userProfile);
+  
+      return {
+          message: 'Profil oluşturuldu',
+          profile: userProfile,
+      };
+  }
+  
+    
     // Tüm kullanıcıları getir
     findAll() {
         return this.userRepository.find();
